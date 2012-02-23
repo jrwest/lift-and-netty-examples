@@ -166,7 +166,7 @@ class NettyHttpRequest extends HTTPRequest {
    * @return - all header parameters present in this request. Nil if no
    *           headers are used.
    */
-  def headers: List[HTTPParam] = throw new Exception("Implement me")
+  def headers: List[HTTPParam] = Nil //TODO FIXME // throw new Exception("Implement me")
 
   /**
    * @return - the context path. Similar with HttpServletRequest.getContextPath.
@@ -278,7 +278,7 @@ class NettyHttpRequest extends HTTPRequest {
    * @return - Some[Any] if this is a resumed request, return the state
    *           associated with it.
    */
-  def resumeInfo : Option[(Req, LiftResponse)] = throw new Exception("Implement me") // FIXME trivial support
+  def resumeInfo : Option[(Req, LiftResponse)] = None // FIXME trivial support
 
   /**
    * Suspend the curent request and resume it after a given timeout
@@ -341,7 +341,7 @@ class NettyHttpRequest extends HTTPRequest {
    *
    * @param cookies - the list of response cookies
    */
-  def addCookies(cookies: List[HTTPCookie]) = throw new Exception("Implement me")
+  def addCookies(cookies: List[HTTPCookie]) {} // FIXME // throw new Exception("Implement me")
 
   /**
    * Encodes the URL such that it adds the session ID if it is necessary to the URL.
@@ -357,7 +357,7 @@ class NettyHttpRequest extends HTTPRequest {
    *
    * @param headers - the list of headers
    */
-  def addHeaders(headers: List[HTTPParam]) = throw new Exception("Implement me")
+  def addHeaders(headers: List[HTTPParam]) {} // FIXME // throw new Exception("Implement me")
 
   /**
    * Sets the HTTP response status
