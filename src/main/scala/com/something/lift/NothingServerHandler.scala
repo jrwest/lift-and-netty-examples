@@ -336,6 +336,8 @@ class NettyHttpRequest extends HTTPRequest {
 
     class MyResponse extends HTTPResponse {
 
+      lazy val nettyResponse: HttpResponse = new DefaultHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.OK)
+
   /**
    * Add cookies to the response
    *
