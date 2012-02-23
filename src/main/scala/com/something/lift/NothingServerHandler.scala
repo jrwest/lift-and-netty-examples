@@ -85,29 +85,20 @@ class NettyContext extends HTTPContext {
   def removeAttribute(name: String): Unit = {}
 }
 
-
-class NothingServerHandler extends SimpleChannelUpstreamHandler with HTTPProvider{
+object MyTypes {
   type VarProvider = { def apply[T](session: Box[LiftSession], f: => T): T}
 
-  lazy val transientVarProvider: VarProvider =
-    findObject("net.liftweb.http.TransientRequestVarHandler").open_!.asInstanceOf[VarProvider]
-  lazy val reqVarProvider: VarProvider =
-    findObject("net.liftweb.http.RequestVarHandler").open_!.asInstanceOf[VarProvider]
+}
 
-    private def findObject(cls: String): Box[AnyRef] =
-    Helpers.tryo[Class[_]](Nil)(Class.forName(cls + "$")).flatMap {
-      c =>
-        Helpers.tryo {
-          val field = c.getField("MODULE$")
-          field.get(null)
-        }
-    }
+import MyTypes._
 
-  lazy val nettyContext = new NettyContext
-
+class NothingServerHandler(val nettyContext: NettyContext,
+                           val transientVarProvider: VarProvider,
+                            val reqVarProvider: VarProvider,
+                            val liftLand: LiftServlet) extends SimpleChannelUpstreamHandler with HTTPProvider{
   def context = nettyContext
 
-  lazy val liftLand = new LiftServlet(nettyContext)
+    bootLift(Empty)
 
     /**
    * Wrap the loans around the incoming request
@@ -407,7 +398,10 @@ class NettyHttpRequest extends HTTPRequest {
                   doNotHandled()
                 })}))
       } catch {
-        case e => e.printStackTrace
+        case excp => excp.printStackTrace
+        val response: HttpResponse = new DefaultHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.OK)
+    val future = e.getChannel.write(response)
+    future.addListener(ChannelFutureListener.CLOSE)
       }
     })
   
