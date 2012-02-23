@@ -194,12 +194,12 @@ class NettyHttpRequest extends HTTPRequest {
   /**
    * @return - the MIME type of the body of the request. Empty if this is unknonwn.
    */
-  def contentType: Box[String] = throw new Exception("Implement me")
+  def contentType: Box[String] = Empty //FIXME // throw new Exception("Implement me")
 
   /**
    * @return - the request URI
    */
-  def uri: String = throw new Exception("Implement me")
+  def uri: String =  request.getUri // throw new Exception("Implement me")
 
   /**
    * @return - the request URL
@@ -276,7 +276,7 @@ class NettyHttpRequest extends HTTPRequest {
   /**
    * @return - the HTTP method: GET, POST etc.
    */
-  def method: String = throw new Exception("Implement me")
+  def method: String = request.getMethod.toString
 
   /**
    * @return true if the underlying container supports suspend/resume idiom.
