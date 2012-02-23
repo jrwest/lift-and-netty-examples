@@ -14,6 +14,7 @@ import com.something.lift.MyRest
 class Boot {
 
   def boot {
+    println("**** Dude... I'm in Boot!!")
     LiftRules.statelessDispatchTable.append(MyRest)
   }
 

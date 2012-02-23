@@ -9,7 +9,7 @@ import java.io.{OutputStream, InputStream}
 import net.liftweb.http.provider._
 import net.liftweb.http._
 import java.util.Locale
-import net.liftweb.util.{Schedule, LoanWrapper}
+import net.liftweb.util.{Helpers, Schedule, LoanWrapper}
 
 /**
  * Created by IntelliJ IDEA.
@@ -87,15 +87,21 @@ class NettyContext extends HTTPContext {
 
 
 class NothingServerHandler extends SimpleChannelUpstreamHandler with HTTPProvider{
-
-  type HasEnding = {def ending: Boolean}
-  lazy val hasEnding = LiftRules.asInstanceOf[HasEnding]
-
   type VarProvider = { def apply[T](session: Box[LiftSession], f: => T): T}
 
-  lazy val transientVarProvider: VarProvider = null
-  lazy val reqVarProvider: VarProvider = null
+  lazy val transientVarProvider: VarProvider =
+    findObject("net.liftweb.http.TransientRequestVarHandler").open_!.asInstanceOf[VarProvider]
+  lazy val reqVarProvider: VarProvider =
+    findObject("net.liftweb.http.RequestVarHandler").open_!.asInstanceOf[VarProvider]
 
+    private def findObject(cls: String): Box[AnyRef] =
+    Helpers.tryo[Class[_]](Nil)(Class.forName(cls + "$")).flatMap {
+      c =>
+        Helpers.tryo {
+          val field = c.getField("MODULE$")
+          field.get(null)
+        }
+    }
 
   lazy val nettyContext = new NettyContext
 
@@ -388,8 +394,8 @@ class NettyHttpRequest extends HTTPRequest {
   def outputStream: OutputStream = throw new Exception("Implement me")
 }
 
-    if (!hasEnding.ending) {
-      Schedule(() =>
+    Schedule(() => {
+      try {
         transientVarProvider(Empty,
                                    reqVarProvider(Empty,{
 
@@ -399,10 +405,12 @@ class NettyHttpRequest extends HTTPRequest {
 
                 handleLoanWrappers(service(httpRequest, httpResponse) {
                   doNotHandled()
-                })})))
-    } else {
-    doNotHandled()
-  }
+                })}))
+      } catch {
+        case e => e.printStackTrace
+      }
+    })
+  
 
     /*
     val response: HttpResponse = new DefaultHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.OK)
