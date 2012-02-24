@@ -37,7 +37,7 @@ class NettyHttpResponse(ctx: ChannelHandlerContext) extends HTTPResponse {
   // FIXME
   def setStatusWithReason(status: Int, reason: String) = throw new Exception("Implement me")
 
-  // TODO make better: ovverride other write methods, better flush
+  // TODO make better: override other write methods, better flush
   def outputStream: OutputStream = new OutputStream {
     // TODO: there is a probably a better impl, by override the other write methods.
     def write(i: Int) {

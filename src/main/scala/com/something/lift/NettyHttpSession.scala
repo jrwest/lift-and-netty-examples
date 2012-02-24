@@ -22,7 +22,7 @@ class NettyHttpSession extends HTTPSession {
   // FIXME
   def unlink(liftSession: LiftSession) = throw new Exception("implement me")
 
-  // FIXME this is just an aribitrary value to get things running
+  // FIXME this is just an arbitrary value to get things running
   def maxInactiveInterval: Long = 100
 
   // FIXME
