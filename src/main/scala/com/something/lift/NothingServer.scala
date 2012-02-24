@@ -66,7 +66,7 @@ object NothingServer extends App {
   bootstrap.setOption("child.keepAlive", true)
 
   val boundChannel = bootstrap.bind(new InetSocketAddress(8080))
-  println("TIME Server Started")
+  println("Lift-Netty Server Started")
 
   allChannels.add(boundChannel)
 

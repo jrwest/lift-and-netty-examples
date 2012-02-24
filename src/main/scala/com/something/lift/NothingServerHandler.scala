@@ -10,6 +10,7 @@ import net.liftweb.http._
 import java.util.Locale
 import net.liftweb.util.{Helpers, Schedule, LoanWrapper}
 import java.net.{InetSocketAddress, URI, URL}
+import org.jboss.netty.buffer.ChannelBuffers
 
 /**
  * Created by IntelliJ IDEA.
@@ -338,7 +339,11 @@ class NettyHttpRequest extends HTTPRequest {
 
     class MyResponse extends HTTPResponse {
 
-      lazy val nettyResponse: HttpResponse = new DefaultHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.OK)
+      lazy val nettyResponse: HttpResponse = {
+        val r = new DefaultHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.OK)
+        r.setContent(ChannelBuffers.dynamicBuffer(1024)) // TODO this is just some random choice, do something more intelligent?
+        r
+      }
 
   /**
    * Add cookies to the response
@@ -390,6 +395,11 @@ class NettyHttpRequest extends HTTPRequest {
     // TODO: there is a probably a better impl, by override the other write methods.
     def write(i: Int) {
       nettyResponse.getContent.writeByte(i)
+    }
+
+    override def flush() {
+      val future = ctx.getChannel.write(nettyResponse)
+      future.addListener(ChannelFutureListener.CLOSE)
     }
   }
 }
