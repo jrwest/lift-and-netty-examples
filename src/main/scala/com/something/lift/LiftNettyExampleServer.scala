@@ -20,16 +20,16 @@ import net.liftweb.common.{Empty, Box}
 
 import MyTypes._
 
-object NothingServer extends App {
+object LiftNettyExampleServer extends App {
 
-  val allChannels = new DefaultChannelGroup("nothing-server")
+  val allChannels = new DefaultChannelGroup("lift-netty-example-server")
 
   private[this] val factory: ChannelFactory = new NioServerSocketChannelFactory(
     Executors.newCachedThreadPool(),
     Executors.newCachedThreadPool()
   )
 
-      private def findObject(cls: String): Box[AnyRef] =
+  private def findObject(cls: String): Box[AnyRef] =
     Helpers.tryo[Class[_]](Nil)(Class.forName(cls + "$")).flatMap {
       c =>
         Helpers.tryo {
@@ -38,13 +38,12 @@ object NothingServer extends App {
         }
     }
 
-    val transientVarProvider: VarProvider =
+  val transientVarProvider: VarProvider =
     findObject("net.liftweb.http.TransientRequestVarHandler").open_!.asInstanceOf[VarProvider]
   val reqVarProvider: VarProvider =
     findObject("net.liftweb.http.RequestVarHandler").open_!.asInstanceOf[VarProvider]
 
-  val nettyContext = new NettyContext
-
+  val nettyContext = new HTTPNettyContext
 
   val liftLand = new LiftServlet(nettyContext)
 
@@ -52,7 +51,7 @@ object NothingServer extends App {
 
   private[this] val bootstrap = new ServerBootstrap(factory)
 
-  val handler = new NothingServerHandler(nettyContext, transientVarProvider, reqVarProvider, liftLand)
+  val handler = new LiftChannelHandler(nettyContext, transientVarProvider, reqVarProvider, liftLand)
 
   bootstrap.setPipelineFactory(new ChannelPipelineFactory {
     def getPipeline: ChannelPipeline = Channels.pipeline(
