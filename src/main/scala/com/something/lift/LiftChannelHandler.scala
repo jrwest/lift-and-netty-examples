@@ -64,7 +64,7 @@ class LiftChannelHandler(val nettyContext: HTTPNettyContext,
                                    reqVarProvider(Empty,{
 
 
-                val httpRequest: HTTPRequest = new NettyHttpRequest(request, ctx, nettyContext, this) // FIXME new HTTPRequestServlet(httpReq, this)
+                val httpRequest: HTTPRequest = new NettyHttpRequest(request, ctx, nettyContext, this)
                 val httpResponse = new NettyHttpResponse(ctx)
 
                 handleLoanWrappers(service(httpRequest, httpResponse) {
