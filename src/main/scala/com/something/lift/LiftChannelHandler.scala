@@ -51,6 +51,7 @@ class LiftChannelHandler(val nettyContext: HTTPNettyContext,
 
   override def messageReceived(ctx: ChannelHandlerContext, e: MessageEvent) {
     val request = e.getMessage.asInstanceOf[HttpRequest]    
+    val keepAlive = HttpHeaders.isKeepAlive(request)
 
     if (HttpHeaders.is100ContinueExpected(request)) {
       send100Continue(e);
@@ -65,7 +66,7 @@ class LiftChannelHandler(val nettyContext: HTTPNettyContext,
 
 
                 val httpRequest: HTTPRequest = new NettyHttpRequest(request, ctx, nettyContext, this)
-                val httpResponse = new NettyHttpResponse(ctx)
+                val httpResponse = new NettyHttpResponse(ctx, keepAlive)
 
                 handleLoanWrappers(service(httpRequest, httpResponse) {
                   doNotHandled()
