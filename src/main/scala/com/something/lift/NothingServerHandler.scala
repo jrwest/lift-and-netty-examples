@@ -2,7 +2,6 @@ package com.something.lift
 
 import org.jboss.netty.handler.codec.http._
 import org.jboss.netty.channel._
-import java.net.URL
 import net.liftweb.common.{Empty, Box}
 import net.liftweb.http.provider.servlet.{HTTPResponseServlet, HTTPRequestServlet}
 import java.io.{OutputStream, InputStream}
@@ -10,6 +9,7 @@ import net.liftweb.http.provider._
 import net.liftweb.http._
 import java.util.Locale
 import net.liftweb.util.{Helpers, Schedule, LoanWrapper}
+import java.net.{InetSocketAddress, URI, URL}
 
 /**
  * Created by IntelliJ IDEA.
@@ -23,7 +23,7 @@ class NettyContext extends HTTPContext {
    * @return - the context path. It always comes first in a request URI. It is
    *           the URI part that represent to context of the request.
    */
-  def path: String = ""
+  def path: String = "/"
 
   /**
    * Returns the URL representation of a resource that is mapped by a fully qualified path.
@@ -32,7 +32,7 @@ class NettyContext extends HTTPContext {
    * @param path - the resource path
    * @return - the URL object of the path
    */
-  def resource(path: String): URL = throw new Exception("Implement me, please")
+  def resource(path: String): URL = null // FIX ME, this should return the path of the resource // throw new Exception("Implement me, please")
 
   /**
    * Same as <i>resource</i> but returns an InputStream to read the resource.
@@ -121,8 +121,7 @@ class NothingServerHandler(val nettyContext: NettyContext,
 
   override def messageReceived(ctx: ChannelHandlerContext, e: MessageEvent) {
     println("MESSAGE RECEIVED")
-    val request = e.getMessage.asInstanceOf[HttpRequest]
-    println(request)
+    val request = e.getMessage.asInstanceOf[HttpRequest]    
 
     if (HttpHeaders.is100ContinueExpected(request)) {
       send100Continue(e);
@@ -138,10 +137,13 @@ class NothingServerHandler(val nettyContext: NettyContext,
  */
 class NettyHttpRequest extends HTTPRequest {
 
+  lazy val nettyLocalAddress = ctx.getChannel.getLocalAddress.asInstanceOf[InetSocketAddress]
+  lazy val nettyRemoteAddress = ctx.getChannel.getRemoteAddress.asInstanceOf[InetSocketAddress]
+
   /**
    * @return - cookies from this request. Nil if there are no cookies.
    */
-  def cookies: List[HTTPCookie] = throw new Exception("Implement me")
+  def cookies: List[HTTPCookie] = Nil // TODO FIX ME // throw new Exception("Implement me")
 
   /**
    * The provider associated with this request
@@ -200,7 +202,7 @@ class NettyHttpRequest extends HTTPRequest {
   /**
    * @return - the entire query string. Empty if the requst contains no query string
    */
-  def queryString: Box[String] = throw new Exception("Implement me")
+  def queryString: Box[String] =  Box !! uri.splitAt(uri.indexOf("?") + 1)._2 //FIXME throw new Exception("Implement me")
 
   /**
    * @param name - the parameter name
@@ -221,7 +223,7 @@ class NettyHttpRequest extends HTTPRequest {
   /**
    * @return - the HTTP session associated with this request
    */
-  def session: HTTPSession = throw new Exception("Implement me")
+  def session: HTTPSession = new NettyHttpSession // FIX ME //throw new Exception("Implement me")
 
   /**
    * Destroy the underlying servlet session
@@ -237,7 +239,7 @@ class NettyHttpRequest extends HTTPRequest {
   /**
    * @return - the remote address of the client or the last seen proxy.
    */
-  def remoteAddress: String = throw new Exception("Implement me")
+  def remoteAddress: String = nettyRemoteAddress.toString
 
   /**
    * @return - the source port of the client or last seen proxy.
@@ -252,17 +254,17 @@ class NettyHttpRequest extends HTTPRequest {
   /**
    * @return - the host name of the server
    */
-  def serverName: String = throw new Exception("Implement me")
+  def serverName: String = nettyLocalAddress.getHostName
 
   /**
    * @return - the name of the scheme of this request: http, https etc.
    */
-  def scheme: String = throw new Exception("Implement me")
+  def scheme: String = (new URI(request.getUri)).getScheme
 
   /**
    * @return - the server port
    */
-  def serverPort: Int = throw new Exception("Implement me")
+  def serverPort: Int = nettyLocalAddress.getPort
 
   /**
    * @return - the HTTP method: GET, POST etc.
@@ -300,7 +302,7 @@ class NettyHttpRequest extends HTTPRequest {
   /**
    * @return true - if the request content is multipart
    */
-  def multipartContent_? : Boolean = throw new Exception("Implement me")
+  def multipartContent_? : Boolean = false // FIXME //throw new Exception("Implement me")
 
   /**
    * @return - the files uploaded
@@ -310,7 +312,7 @@ class NettyHttpRequest extends HTTPRequest {
   /**
    * @return - the locale forthis request. Empty if there is not language information.
    */
-  def locale: Box[Locale] = throw new Exception("Implement me")
+  def locale: Box[Locale] = Empty // FIXME throw new Exception("Implement me")
 
   /**
    * Sets the character encoding that will be used for request body read
@@ -330,7 +332,7 @@ class NettyHttpRequest extends HTTPRequest {
   /**
   * The User-Agent of the request
   */
-  def userAgent: Box[String] = throw new Exception("Implement me")
+  def userAgent: Box[String] = Box !! request.getHeader(HttpHeaders.Names.USER_AGENT)
 }
 
 
@@ -366,12 +368,12 @@ class NettyHttpRequest extends HTTPRequest {
    *
    * @param status - the HTTP status
    */
-  def setStatus(status: Int) = throw new Exception("Implement me")
+  def setStatus(status: Int) = nettyResponse.setStatus(HttpResponseStatus.valueOf(status)) //throw new Exception("Implement me")
 
   /**
    * Returns the HTTP response status that has been set with setStatus
    * */
-  def getStatus: Int = throw new Exception("Implement me")
+  def getStatus: Int = nettyResponse.getStatus.getCode
 
   /**
    * Sets the HTTP response status
@@ -384,7 +386,12 @@ class NettyHttpRequest extends HTTPRequest {
   /**
    * @return - the OutputStream that can be used to send down o the client the response body.
    */
-  def outputStream: OutputStream = throw new Exception("Implement me")
+  def outputStream: OutputStream = new OutputStream {
+    // TODO: there is a probably a better impl, by override the other write methods.
+    def write(i: Int) {
+      nettyResponse.getContent.writeByte(i)
+    }
+  }
 }
 
     Schedule(() => {
@@ -426,4 +433,75 @@ class NettyHttpRequest extends HTTPRequest {
   }
 
 
+}
+
+class NettyHttpSession extends HTTPSession {
+
+  /**
+   * @return - the HTTP session ID
+   */
+  def sessionId: String = "" // FIXME //throw new Exception("implement me")
+
+  /**
+   * Links a LiftSession with this HTTP session. Hence when the HTTP session
+   * terminates or times out LiftSession will be destroyed as well.
+   *
+   * @param liftSession - the LiftSession
+   */
+  def link(liftSession: LiftSession) {} // TODO: FIXME // throw new Exception("implement me")
+
+  /**
+   * The opposite of the <i>link</i>. Hence the LiftSession and the HTTP session no
+   * longer needs to be related. It is called when LiftSession is explicitelly terminated.
+   *
+   * @param liftSession - the LiftSession
+   */
+  def unlink(liftSession: LiftSession) = throw new Exception("implement me")
+
+  /**
+   * @returns - the maximim interval in seconds between client request and the time when
+   *            the session will be terminated
+   *
+   */
+  def maxInactiveInterval: Long = 100 // FIX ME //throw new Exception("implement me")
+
+  /**
+   * Sets the maximim interval in seconds between client request and the time when
+   * the session will be terminated
+   *
+   * @param interval - the value in seconds
+   *
+   */
+  def setMaxInactiveInterval(interval: Long) = throw new Exception("implement me")
+
+  /**
+   * @return - the last time server receivsd a client request for this session
+   */
+  def lastAccessedTime: Long = System.currentTimeMillis // TODO: FIXME //throw new Exception("implement me")
+
+  /**
+   * Sets a value associated with a name for this session
+   *
+   * @param name - the attribute name
+   * @param value - any value
+   */
+  def setAttribute(name: String, value: Any) = throw new Exception("implement me")
+
+  /**
+   * @param name - the attribute name
+   * @return - the attribute value associated with this name
+   */
+  def attribute(name: String): Any = throw new Exception("implement me")
+
+  /**
+   * Removes the session attribute having this name
+   *
+   * @param name - the attribute name
+   */
+  def removeAttribute(name: String) { throw new Exception("implement me") }
+
+  /**
+   * Terminates this session
+   */
+  def terminate { throw new Exception("implement me") }
 }
